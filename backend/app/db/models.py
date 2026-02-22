@@ -9,7 +9,7 @@ class ScrapeSession(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow())
+    created_at = Column(DateTime, default=datetime.utcnow)
     
     pages = relationship(
         "ScrapedPage",
@@ -23,7 +23,9 @@ class ScrapedPage(Base):
     session_id = Column(Integer, ForeignKey("scrape_sessions.id", ondelete="CASCADE"), nullable=False)
     url = Column(String, nullable=False)
     raw_html = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow())
+    selector = Column(String, nullable=True)
+    mode = Column(String, default="static")
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     session = relationship(
         "ScrapeSession",
@@ -43,7 +45,7 @@ class ScrapedElement(Base):
     page_id = Column(Integer, ForeignKey("scraped_pages.id", ondelete="CASCADE"), nullable=False)
     tag_name = Column(String)
     text_content = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow())
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     page = relationship(
         "ScrapedPage",
