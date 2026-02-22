@@ -9,7 +9,7 @@ Loom is an interactive web scraping and visualization playground designed to tea
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone [<your-repo-url>](https://github.com/sAVItar02/Loom-WebDataLab)
 cd webalchemy
 ```
 
