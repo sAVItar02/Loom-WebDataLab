@@ -8,12 +8,12 @@ class ScrapeRequest(BaseModel):
     selector: str
     mode: Optional[str] = "static"
 
-class ScrapedElementResponse(BaseModel): 
+class ScrapedElementResponse(BaseModel):
     tag_name: Optional[str] = None
     text_content: str
-    detected_type = str
-    numeric_value = Optional[int] = None
-    date_value = Optional[datetime] = None
+    detected_type: str
+    numeric_value: Optional[float] = None
+    date_value: Optional[datetime] = None
 
 class ScrapeResponse(BaseModel): 
     page_id: int

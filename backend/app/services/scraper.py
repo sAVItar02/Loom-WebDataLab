@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 def detect_value(value: str): 
     value = value.strip()
