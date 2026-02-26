@@ -1,16 +1,72 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Primary (Violet-Indigo) */
+  --color-primary:          #4f39f6;
+  --color-primary-hover:    #3d28e0;
+  --color-primary-active:   #2d1ccc;
+  --color-primary-subtle:   #ede9fe;
+  --color-primary-muted:    #c4b5fd;
+
+  /* Backgrounds */
+  --color-bg-primary:       #ffffff;
+  --color-bg-secondary:     #f4f4f5;
+  --color-bg-tertiary:      #e4e4e7;
+  --color-bg-overlay:       #ffffff;
+
+  /* Borders */
+  --color-border-default:   #d4d4d8;
+  --color-border-strong:    #a1a1aa;
+  --color-border-focus:     #4f39f6;
+
+  /* Text */
+  --color-text-primary:     #09090b;
+  --color-text-secondary:   #52525b;
+  --color-text-muted:       #a1a1aa;
+  --color-text-on-primary:  #ffffff;
+
+  /* Semantic */
+  --color-success:          #4ade80;
+  --color-warning:          #fbbf24;
+  --color-error:            #f87171;
+  --color-info:             #38bdf8;
 }
 
 @layer base {
-  :root {
-    color-scheme: dark;
-  }
   body {
-    @apply bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500/30;
+    @apply bg-bg-primary text-text-primary antialiased font-sans selection:bg-primary/30;
+  }
+
+  .dark {
+    --color-primary:          #6d55f7;
+    --color-primary-hover:    #7c66f8;
+    --color-primary-active:   #8b77f9;
+    --color-primary-subtle:   #1e1a3a;
+    --color-primary-muted:    #4f39f6;
+
+    --color-bg-primary:       #09090b;
+    --color-bg-secondary:     #18181b;
+    --color-bg-tertiary:      #27272a;
+    --color-bg-overlay:       #18181b;
+
+    --color-border-default:   #3f3f46;
+    --color-border-strong:    #52525b;
+    --color-border-focus:     #6d55f7;
+
+    --color-text-primary:     #fafafa;
+    --color-text-secondary:   #a1a1aa;
+    --color-text-muted:       #52525b;
+    --color-text-on-primary:  #ffffff;
+
+    --color-success:          #4ade80;
+    --color-warning:          #fbbf24;
+    --color-error:            #f87171;
+    --color-info:             #38bdf8;
   }
 }

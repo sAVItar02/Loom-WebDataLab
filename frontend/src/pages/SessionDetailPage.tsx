@@ -33,11 +33,11 @@ export function SessionDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-8 w-64 bg-zinc-800 rounded"></div>
-        <div className="h-32 bg-zinc-800 rounded-xl"></div>
+        <div className="h-8 w-64 bg-bg-tertiary rounded"></div>
+        <div className="h-32 bg-bg-tertiary rounded-xl"></div>
         <div className="space-y-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-24 bg-zinc-800 rounded-xl"></div>
+            <div key={i} className="h-24 bg-bg-tertiary rounded-xl"></div>
           ))}
         </div>
       </div>
@@ -47,8 +47,8 @@ export function SessionDetailPage() {
   if (!session) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-zinc-300">Session not found</h2>
-        <Link to="/sessions" className="text-indigo-400 hover:underline mt-4 inline-block">
+        <h2 className="text-xl font-semibold text-text-secondary">Session not found</h2>
+        <Link to="/sessions" className="text-primary hover:underline mt-4 inline-block">
           Return to Sessions
         </Link>
       </div>
@@ -59,17 +59,17 @@ export function SessionDetailPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/sessions" className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 transition-colors">
+          <Link to="/sessions" className="p-2 rounded-lg hover:bg-bg-secondary text-text-muted transition-colors">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div>
             <h2 className="text-2xl font-bold tracking-tight">{session.name}</h2>
-            <div className="flex items-center gap-2 mt-1 text-sm text-zinc-400">
-              <a href={session.url} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 hover:underline flex items-center gap-1">
+            <div className="flex items-center gap-2 mt-1 text-sm text-text-secondary">
+              <a href={session.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary hover:underline flex items-center gap-1">
                 {session.url}
                 <ExternalLink className="h-3 w-3" />
               </a>
-              <span>•</span>
+              <span>·</span>
               <span>Created {formatDistanceToNow(new Date(session.created_at), { addSuffix: true })}</span>
             </div>
           </div>
@@ -88,7 +88,7 @@ export function SessionDetailPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Pages Scraped</CardTitle>
+            <CardTitle className="text-sm font-medium text-text-secondary">Pages Scraped</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{session.pages_scraped}</div>
@@ -96,7 +96,7 @@ export function SessionDetailPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Elements Extracted</CardTitle>
+            <CardTitle className="text-sm font-medium text-text-secondary">Elements Extracted</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{session.elements_extracted}</div>
@@ -104,10 +104,10 @@ export function SessionDetailPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Success Rate</CardTitle>
+            <CardTitle className="text-sm font-medium text-text-secondary">Success Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-emerald-500">
+            <div className="text-3xl font-bold text-success">
               {pages.length > 0 ? Math.round((pages.filter(p => p.status === 'scraped').length / pages.length) * 100) : 0}%
             </div>
           </CardContent>
@@ -118,29 +118,29 @@ export function SessionDetailPage() {
         <h3 className="text-lg font-semibold mb-4">Scraped Pages</h3>
         <div className="space-y-4">
           {pages.length === 0 ? (
-            <div className="text-center py-12 border border-zinc-800 border-dashed rounded-xl bg-zinc-900/30">
-              <p className="text-zinc-500">No pages scraped yet.</p>
+            <div className="text-center py-12 border border-border-default border-dashed rounded-xl bg-bg-secondary/30">
+              <p className="text-text-muted">No pages scraped yet.</p>
             </div>
           ) : (
             pages.map((page) => (
-              <Card key={page.id} className="hover:border-zinc-700 transition-colors">
+              <Card key={page.id} className="hover:border-border-strong transition-colors">
                 <div className="p-6 flex items-center justify-between">
                   <div className="flex-1 min-w-0 pr-4">
                     <div className="flex items-center gap-3 mb-1">
-                      <Link to={`/pages/${page.id}`} className="text-lg font-medium hover:text-indigo-400 transition-colors truncate">
+                      <Link to={`/pages/${page.id}`} className="text-lg font-medium hover:text-primary transition-colors truncate">
                         {page.title || page.url}
                       </Link>
                       <Badge variant={page.status === 'scraped' ? 'success' : page.status === 'failed' ? 'danger' : 'warning'}>
                         {page.status}
                       </Badge>
                     </div>
-                    <div className="text-sm text-zinc-500 truncate flex items-center gap-2">
-                      <a href={page.url} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 hover:underline">
+                    <div className="text-sm text-text-muted truncate flex items-center gap-2">
+                      <a href={page.url} target="_blank" rel="noopener noreferrer" className="hover:text-text-secondary hover:underline">
                         {page.url}
                       </a>
-                      <span>•</span>
+                      <span>·</span>
                       <span>{page.elements_count} elements</span>
-                      <span>•</span>
+                      <span>·</span>
                       <span>{formatDistanceToNow(new Date(page.scraped_at), { addSuffix: true })}</span>
                     </div>
                   </div>
@@ -170,8 +170,8 @@ export function SessionDetailPage() {
         title="Raw HTML Content"
         className="max-w-4xl w-full"
       >
-        <div className="mt-4 bg-zinc-900 rounded-lg p-4 overflow-auto max-h-[60vh] border border-zinc-800">
-          <pre className="text-xs font-mono text-zinc-300 whitespace-pre-wrap break-all">
+        <div className="mt-4 bg-bg-secondary rounded-lg p-4 overflow-auto max-h-[60vh] border border-border-default">
+          <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all">
             {selectedHtml}
           </pre>
         </div>
