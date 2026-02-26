@@ -1,112 +1,110 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from uuid import UUID
-from typing import List
-
 from app.db.session import get_db
 from app.db.models import ScrapeSession, ScrapedPage, ScrapedElement
-from app.schemas.scrape import ScrapeRequest, ScrapeResponse, ScrapedElementResponse
+from app.schemas.page import PageCreate, PageResponse, ScrapedElementResponse
 from app.services.scraper import scrape_static
+import requests
 
-router = APIRouter(prefix="/sessions/{session_id}/pages", tags=["pages"])
+router = APIRouter(tags=["pages"])
 
-# Create & Scrape Page
 
-@router.post("/", response_model=ScrapeResponse)
-def create_page(session_id: UUID, payload: ScrapeRequest, db: Session = Depends(get_db)):
-    session = db.query(ScrapeSession).filter(ScrapeSession.id == session_id).first()
+@router.post("/sessions/{session_id}/pages", response_model=PageResponse)
+def create_page_and_scrape(
+    session_id: int,
+    payload: PageCreate,
+    db: Session = Depends(get_db),
+):
+    session = db.query(ScrapeSession).filter(
+        ScrapeSession.id == session_id
+    ).first()
 
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    if payload.mode !== "static":
-        raise HTTPException(status_code=400, detail="Only static mode is supported for now")
+    try:
+        raw_results = scrape_static(payload.url, payload.selector)
+        raw_html = requests.get(payload.url).text
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Scraping failed: {str(e)}")
 
-    elements_data = scrape_static(payload.url, payload.selector)
-
-    new_page = ScrapedPage(
+    page = ScrapedPage(
         session_id=session_id,
         url=payload.url,
         selector=payload.selector,
-        mode="static",
-        raw_html="",
+        raw_html=raw_html,
+        mode=payload.mode or "static",
     )
 
-    db.add(new_page)
-    db.flush()
+    db.add(page)
+    db.flush() 
 
-    for el in elements_data:
-        db.add(
-            ScrapedElement(
-                page_id=new_page.id,
-                tag_name=el["tag_name"],
-                text_content=el["text_content"],
-                detected_type=el["detected_type"],
-                numeric_value=el["numeric_value"],
-                date_value=el["date_value"],
+    elements_response = []
+
+    for item in raw_results:
+        element = ScrapedElement(
+            page_id=page.id,
+            tag_name=item["tag_name"],
+            text_content=item["text_content"],
+            detected_type=item["detected_type"],
+            numeric_value=item["numeric_value"],
+            date_value=item["date_value"],
+        )
+
+        db.add(element)
+
+        elements_response.append(
+            ScrapedElementResponse(
+                tag_name=item["tag_name"],
+                text_content=item["text_content"],
+                detected_type=item["detected_type"],
+                numeric_value=item["numeric_value"],
+                date_value=item["date_value"],
             )
         )
-    
+
     db.commit()
-    db.refresh(new_page)
 
-    return ScrapeResponse(page_id=new_page.id, elements=[ScrapedElementResponse(**el) for el in elements_data])
+    return PageResponse(
+        id=page.id,
+        url=page.url,
+        selector=page.selector,
+        mode=page.mode,
+        elements=elements_response,
+    )
 
-# Get all pages for a session
 
-@router.get("/", response_model=List[ScrapeResponse])
-def get_pages(session_id: UUID, db: Session = Depends(get_db)):
-    session = db.query(ScrapeSession).filter(ScrapeSession.id == session_id).first()
+@router.get("/sessions/{session_id}/pages", response_model=list[PageResponse])
+def get_pages_for_session(session_id: int, db: Session = Depends(get_db)):
+    pages = db.query(ScrapedPage).filter(
+        ScrapedPage.session_id == session_id
+    ).all()
 
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    return pages
 
-    response = []
 
-    for page in session.pages:
-        elements = [
-            ScrapedElementResponse(
-                tag_name=element.tag_name,
-                text_content=element.text_content,
-                detected_type=element.detected_type,
-                numeric_value=element.numeric_value,
-                date_value=element.date_value,
-            ) for element in page.elements
-        ]
-        response.append(ScrapeResponse(page_id=page.id, elements=elements))
-
-    return response
-
-# Get a single page
-
-@router.get("/{page_id}", response_model=ScrapeResponse)
-def get_page(session_id: UUID, page_id: UUID, db: Session = Depends(get_db)):
-    page = db.query(ScrapedPage).filter(ScrapedPage.id == page_id, ScrapedPage.session_id == session_id).first()
+@router.get("/pages/{page_id}", response_model=PageResponse)
+def get_page(page_id: int, db: Session = Depends(get_db)):
+    page = db.query(ScrapedPage).filter(
+        ScrapedPage.id == page_id
+    ).first()
 
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
-    
-    elements = [
-        ScrapedElementResponse(
-            tag_name=element.tag_name,
-            text_content=element.text_content,
-            detected_type=element.detected_type,
-            numeric_value=element.numeric_value,
-            date_value=element.date_value,
-        ) for element in page.elements
-    ]
 
-    return ScrapeResponse(page_id=page.id, elements=elements)
+    return page
 
-# Delete a page
 
-@router.delete("/{page_id}", response_model=dict)
-def delete_page(session_id: UUID, page_id: UUID, db: Session = Depends(get_db)):
-    page = db.query(ScrapedPage).filter(ScrapedPage.id == page_id, ScrapedPage.session_id == session_id).first()
+@router.delete("/pages/{page_id}")
+def delete_page(page_id: int, db: Session = Depends(get_db)):
+    page = db.query(ScrapedPage).filter(
+        ScrapedPage.id == page_id
+    ).first()
 
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
-    
+
     db.delete(page)
     db.commit()
-    return {"message": "Page deleted successfully"}
+
+    return {"message": "Page deleted"}
