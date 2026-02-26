@@ -1,22 +1,22 @@
+import { v4 as uuidv4 } from 'uuid';
 export interface Session {
-    id: string;
+    id: typeof uuidv4;
     name: string;
     url: string;
     status: 'pending' | 'running' | 'completed' | 'failed';
     created_at: string;
-    pages_scraped: number;
+    page_count: number;
     elements_extracted: number;
+    last_scraped_at: string;
   }
   
   export interface Page {
     id: string;
-    session_id: string;
     url: string;
-    title: string;
-    status: 'pending' | 'scraped' | 'failed';
-    scraped_at: string;
-    raw_html?: string;
-    elements_count: number;
+    selector: string;
+    mode: 'static' | 'dynamic';
+    elements: Element[];
+    created_at: string;
   }
   
   export interface Element {

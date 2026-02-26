@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional
+from uuid import UUID
 
 class PageCreate(BaseModel):
     url: str
@@ -11,13 +12,13 @@ class PageCreate(BaseModel):
 class ScrapedElementResponse(BaseModel):
     tag_name: Optional[str] = None
     text_content: str
-    detected_type: str
+    detected_type: Optional[str] = None
     numeric_value: Optional[float] = None
     date_value: Optional[datetime] = None
 
 
 class PageResponse(BaseModel):
-    id: int
+    id: UUID
     url: str
     selector: str
     mode: str
@@ -25,3 +26,6 @@ class PageResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+PageResponse.model_rebuild()
+ScrapedElementResponse.model_rebuild()

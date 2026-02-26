@@ -5,13 +5,14 @@ from app.db.models import ScrapeSession, ScrapedPage, ScrapedElement
 from app.schemas.page import PageCreate, PageResponse, ScrapedElementResponse
 from app.services.scraper import scrape_static
 import requests
+from uuid import UUID
 
 router = APIRouter(tags=["pages"])
 
 
 @router.post("/sessions/{session_id}/pages", response_model=PageResponse)
 def create_page_and_scrape(
-    session_id: int,
+    session_id: UUID,
     payload: PageCreate,
     db: Session = Depends(get_db),
 ):
@@ -46,9 +47,9 @@ def create_page_and_scrape(
             page_id=page.id,
             tag_name=item["tag_name"],
             text_content=item["text_content"],
-            detected_type=item["detected_type"],
-            numeric_value=item["numeric_value"],
-            date_value=item["date_value"],
+            # detected_type=item["detected_type"],
+            # numeric_value=item["numeric_value"],
+            # date_value=item["date_value"],
         )
 
         db.add(element)
@@ -57,9 +58,9 @@ def create_page_and_scrape(
             ScrapedElementResponse(
                 tag_name=item["tag_name"],
                 text_content=item["text_content"],
-                detected_type=item["detected_type"],
-                numeric_value=item["numeric_value"],
-                date_value=item["date_value"],
+                # detected_type=item["detected_type"],
+                # numeric_value=item["numeric_value"],
+                # date_value=item["date_value"],
             )
         )
 
@@ -75,7 +76,7 @@ def create_page_and_scrape(
 
 
 @router.get("/sessions/{session_id}/pages", response_model=list[PageResponse])
-def get_pages_for_session(session_id: int, db: Session = Depends(get_db)):
+def get_pages_for_session(session_id: UUID, db: Session = Depends(get_db)):
     pages = db.query(ScrapedPage).filter(
         ScrapedPage.session_id == session_id
     ).all()
@@ -84,7 +85,7 @@ def get_pages_for_session(session_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/pages/{page_id}", response_model=PageResponse)
-def get_page(page_id: int, db: Session = Depends(get_db)):
+def get_page(page_id: UUID, db: Session = Depends(get_db)):
     page = db.query(ScrapedPage).filter(
         ScrapedPage.id == page_id
     ).first()
@@ -96,7 +97,7 @@ def get_page(page_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/pages/{page_id}")
-def delete_page(page_id: int, db: Session = Depends(get_db)):
+def delete_page(page_id: UUID, db: Session = Depends(get_db)):
     page = db.query(ScrapedPage).filter(
         ScrapedPage.id == page_id
     ).first()

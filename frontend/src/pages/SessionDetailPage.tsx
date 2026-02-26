@@ -1,36 +1,28 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
-import { ChevronLeft, ExternalLink, FileCode, RefreshCcw } from 'lucide-react';
+import { ChevronLeft, FileCode, Loader2, Plus, RefreshCcw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import type { Session, Page } from '../types';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
+import { useSession } from '../queries/session.queries';
+import { useCreatePage, usePages } from '../queries/page.queries';
+import type { Page } from '../types';
+import { parseApiDate } from '../utils/helpers';
 
 export function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [session, setSession] = useState<Session | null>(null);
-  const [pages, setPages] = useState<Page[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedHtml, setSelectedHtml] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [url, setUrl] = useState('');
+  const [selector, setSelector] = useState('');
 
-  const fetchData = async () => {
-    if (!id) return;
-    setLoading(true);
-    try {
-      const [sessionData, pagesData] = await Promise.all([
-        Promise.resolve({}),
-        Promise.resolve([])
-      ]);
-      setSession(sessionData as Session);
-      setPages(pagesData as Page[]);
-    } catch (error) {
-      console.error('Failed to fetch session details:', error);
-    }
-  };
+  const { data: session, isLoading: isLoadingSession, refetch } = useSession(id ?? '0');
+  const { data: pages, isLoading: isLoadingPages } = usePages(id ?? '');
+  const { mutate: createPage, isPending: isCreatingPage } = useCreatePage();
 
-  if (loading) {
+  if (isLoadingSession || isLoadingPages) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-8 w-64 bg-bg-tertiary rounded"></div>
@@ -55,6 +47,14 @@ export function SessionDetailPage() {
     );
   }
 
+  if (!pages) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-xl font-semibold text-text-secondary">No pages found</h2>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -65,20 +65,14 @@ export function SessionDetailPage() {
           <div>
             <h2 className="text-2xl font-bold tracking-tight">{session.name}</h2>
             <div className="flex items-center gap-2 mt-1 text-sm text-text-secondary">
-              <a href={session.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary hover:underline flex items-center gap-1">
-                {session.url}
-                <ExternalLink className="h-3 w-3" />
-              </a>
+              <span>Created {formatDistanceToNow(parseApiDate(session.created_at), { addSuffix: true })}</span>
               <span>·</span>
-              <span>Created {formatDistanceToNow(new Date(session.created_at), { addSuffix: true })}</span>
+              <span>Last Scraped {session.last_scraped_at ? formatDistanceToNow(parseApiDate(session.last_scraped_at), { addSuffix: true }) : 'N/A'}</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant={session.status === 'completed' ? 'success' : session.status === 'running' ? 'info' : session.status === 'failed' ? 'danger' : 'warning'}>
-            {session.status.toUpperCase()}
-          </Badge>
-          <Button variant="outline" size="sm" onClick={fetchData}>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCcw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
@@ -91,7 +85,7 @@ export function SessionDetailPage() {
             <CardTitle className="text-sm font-medium text-text-secondary">Pages Scraped</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{session.pages_scraped}</div>
+            <div className="text-3xl font-bold">{session.page_count}</div>
           </CardContent>
         </Card>
         <Card>
@@ -102,36 +96,30 @@ export function SessionDetailPage() {
             <div className="text-3xl font-bold">{session.elements_extracted}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-text-secondary">Success Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-success">
-              {pages.length > 0 ? Math.round((pages.filter(p => p.status === 'scraped').length / pages.length) * 100) : 0}%
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <div>
         <h3 className="text-lg font-semibold mb-4">Scraped Pages</h3>
         <div className="space-y-4">
           {pages.length === 0 ? (
-            <div className="text-center py-12 border border-border-default border-dashed rounded-xl bg-bg-secondary/30">
+            <div className="text-center py-12 border border-border-default border-dashed rounded-xl bg-bg-secondary/30 flex flex-col items-center justify-center gap-8">
               <p className="text-text-muted">No pages scraped yet.</p>
+              <Button variant="primary" className="cursor-pointer" onClick={() => setIsModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Start New Scrape
+              </Button>
             </div>
           ) : (
-            pages.map((page) => (
+            pages.map((page: Page) => (
               <Card key={page.id} className="hover:border-border-strong transition-colors">
                 <div className="p-6 flex items-center justify-between">
                   <div className="flex-1 min-w-0 pr-4">
                     <div className="flex items-center gap-3 mb-1">
                       <Link to={`/pages/${page.id}`} className="text-lg font-medium hover:text-primary transition-colors truncate">
-                        {page.title || page.url}
+                        {page.url}
                       </Link>
-                      <Badge variant={page.status === 'scraped' ? 'success' : page.status === 'failed' ? 'danger' : 'warning'}>
-                        {page.status}
+                      <Badge variant={page.elements.length != 0 ? 'success' :   'danger'}>
+                        {page.elements.length != 0 ? 'Scraped' : 'Failed'}
                       </Badge>
                     </div>
                     <div className="text-sm text-text-muted truncate flex items-center gap-2">
@@ -139,14 +127,14 @@ export function SessionDetailPage() {
                         {page.url}
                       </a>
                       <span>·</span>
-                      <span>{page.elements_count} elements</span>
+                      <span>{page.elements.length} elements</span>
                       <span>·</span>
-                      <span>{formatDistanceToNow(new Date(page.scraped_at), { addSuffix: true })}</span>
+                      <span>{page.created_at ? formatDistanceToNow(parseApiDate(page.created_at), { addSuffix: true }) : 'N/A'}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    {page.raw_html && (
-                      <Button variant="outline" size="sm" onClick={() => setSelectedHtml(page.raw_html!)}>
+                    {page.elements.length != 0 && (
+                      <Button variant="outline" size="sm" onClick={() => setSelectedHtml(page.elements[0].text_content)}>
                         <FileCode className="h-4 w-4 mr-2" />
                         View HTML
                       </Button>
@@ -178,6 +166,48 @@ export function SessionDetailPage() {
         <div className="mt-6 flex justify-end">
           <Button onClick={() => setSelectedHtml(null)}>Close</Button>
         </div>
+      </Modal>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Start New Scrape">
+        <p className="text-sm text-text-secondary mb-4">
+          This will start a new scrape for the session.
+        </p>
+        <form onSubmit={() => {}} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="url" className="text-sm font-medium text-text-secondary">
+              URL <span className="text-error">*</span>
+            </label>
+            <input
+              id="url"
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="e.g., https://www.example.com"
+              className="w-full rounded-lg border border-border-default bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="selector" className="text-sm font-medium text-text-secondary">
+              Selector <span className="text-error">*</span>
+            </label>
+            <input
+              id="selector"
+              type="text"
+              value={selector}
+              onChange={(e) => setSelector(e.target.value)}
+              placeholder="e.g., .product-card"
+              className="w-full rounded-lg border border-border-default bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+            />
+          </div>
+          <div className="pt-4 flex justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={isCreatingPage} isLoading={isCreatingPage} onClick={() => createPage({ sessionId: id ?? '', url, selector })}>
+              {isCreatingPage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : 'Start Scrape'}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
