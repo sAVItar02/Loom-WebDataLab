@@ -12,7 +12,7 @@ export function SessionsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
   const [newSessionUrl, setNewSessionUrl] = useState('');
-  const [newSessionClassName, setNewSessionClassName] = useState('');
+  // const [newSessionClassName, setNewSessionClassName] = useState('');
   const [sessions, setSessions] = useState<Session[]>([]);
 
 
@@ -113,7 +113,7 @@ export function SessionsPage() {
         <form onSubmit={() => {}} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium text-text-secondary">
-              Session Name
+              Session Name <span className="text-error">*</span>
             </label>
             <input
               id="name"
@@ -138,7 +138,7 @@ export function SessionsPage() {
               className="w-full rounded-lg border border-border-default bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
             />
           </div>
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <label htmlFor="className" className="text-sm font-medium text-text-secondary">
               Target Class Name
             </label>
@@ -150,7 +150,7 @@ export function SessionsPage() {
               placeholder="e.g., product-item"
               className="w-full rounded-lg border border-border-default bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
             />
-          </div>
+          </div> */}
           <div className="pt-4 flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
               Cancel

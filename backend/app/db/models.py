@@ -1,26 +1,29 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime
+import uuid 
+from sqlalchemy.dialects.postgresql import UUID
 
 Base = declarative_base()
 
 class ScrapeSession(Base): 
     __tablename__ = "scrape_sessions"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     pages = relationship(
         "ScrapedPage",
         back_populates="session",
+        cascade="all, delete-orphan"
     )
 
 class ScrapedPage(Base):
     __tablename__ = "scraped_pages"
 
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("scrape_sessions.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    session_id = Column(UUID(as_uuid=True), ForeignKey("scrape_sessions.id", ondelete="CASCADE"), nullable=False)
     url = Column(String, nullable=False)
     raw_html = Column(Text, nullable=False)
     selector = Column(String, nullable=True)
@@ -41,8 +44,8 @@ class ScrapedPage(Base):
 class ScrapedElement(Base):
     __tablename__ = "scraped_elements"
 
-    id = Column(Integer, primary_key=True, index=True)
-    page_id = Column(Integer, ForeignKey("scraped_pages.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    page_id = Column(UUID(as_uuid=True), ForeignKey("scraped_pages.id", ondelete="CASCADE"), nullable=False)
     tag_name = Column(String)
     text_content = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
