@@ -43,29 +43,3 @@ def delete_session(session_id: UUID, db: Session = Depends(get_db)):
     db.delete(session)
     db.commit()
     return {"message": "Session deleted successfully"}
-
-# Session Pages
-
-@router.get("/{session_id}/pages", response_model=List[ScrapedPageResponse])
-def get_session_pages(session_id: UUID, db: Session = Depends(get_db)):
-    session = db.query(ScrapeSession).filter(ScrapeSession.id == session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    pages = session.pages
-    response = []
-    for page in pages:
-        elements = [
-            ScrapedElementResponse(
-                tag_name=element.tag_name,
-                text_content=element.text_content,
-                detected_type=element.detected_type,
-                numeric_value=element.numeric_value,
-                date_value=element.date_value,
-            ) for element in page.elements
-        ]
-        response.append(ScrapeResponse(
-            page_id=page.id,
-            elements=elements,
-        ))
-    return response
