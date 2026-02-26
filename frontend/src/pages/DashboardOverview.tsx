@@ -1,7 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Activity, Database, FileText, LayoutList } from 'lucide-react';
+import { Database, FileText, LayoutList } from 'lucide-react';
+import { useSessions } from '../queries/session.queries';
 
 export function DashboardOverview() {
+
+  const { data: sessions, isLoading: isLoadingSessions } = useSessions();
+
   return (
     <div className="space-y-8">
       <div>
@@ -16,19 +20,12 @@ export function DashboardOverview() {
             <LayoutList className="h-4 w-4 text-text-muted" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">0</div>
+            {isLoadingSessions ? (
+              <div className="h-8 w-24 bg-bg-tertiary rounded-lg animate-pulse"></div>
+            ) : (
+              <div className="text-3xl font-bold">{sessions?.length ?? 0}</div>
+            )}
             <p className="text-xs text-text-muted mt-1">All time</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-text-secondary">Active Sessions</CardTitle>
-            <Activity className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">0</div>
-            <p className="text-xs text-text-muted mt-1">Currently running</p>
           </CardContent>
         </Card>
 
@@ -38,7 +35,11 @@ export function DashboardOverview() {
             <FileText className="h-4 w-4 text-text-muted" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">0</div>
+            {isLoadingSessions ? (
+              <div className="h-8 w-24 bg-bg-tertiary rounded-lg animate-pulse"></div>
+            ) : (
+              <div className="text-3xl font-bold">{sessions && (sessions.page_count) || 0}</div>
+            )}
             <p className="text-xs text-text-muted mt-1">Successfully processed</p>
           </CardContent>
         </Card>
@@ -49,7 +50,11 @@ export function DashboardOverview() {
             <Database className="h-4 w-4 text-text-muted" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">0</div>
+            {isLoadingSessions ? (
+              <div className="h-8 w-24 bg-bg-tertiary rounded-lg animate-pulse"></div>
+            ) : (
+              <div className="text-3xl font-bold">{sessions && (sessions.elements_extracted) || 0}</div>
+            )}
             <p className="text-xs text-text-muted mt-1">Data points collected</p>
           </CardContent>
         </Card>
