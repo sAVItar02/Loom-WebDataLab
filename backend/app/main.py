@@ -4,6 +4,7 @@ from .db.models import Base
 from .core.config import settings
 from .routes.sessions import router as sessions_router
 from .routes.pages import router as pages_router
+from .routes.graph import router as graph_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -23,3 +24,4 @@ app.add_middleware(
 
 app.include_router(sessions_router)
 app.include_router(pages_router)
+app.include_router(graph_router)
