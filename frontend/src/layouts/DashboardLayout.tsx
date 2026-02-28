@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router";
-import { LayoutDashboard, List } from "lucide-react";
+import { LayoutDashboard, List, BarChartBig } from "lucide-react";
 import { cn } from "../utils/helpers";
 import SpiderLogo from "../assets/spider.svg?react";
 import { useState } from "react";
@@ -9,6 +9,7 @@ export function DashboardLayout() {
   const navItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Sessions", href: "/sessions", icon: List },
+    { name: "PageRank Graph", href: "/pagerank-graph", icon: BarChartBig },
   ];
 
   const [theme, setTheme] = useState<"light" | "dark">("light");

@@ -3,6 +3,7 @@
     "concurrently": "^9.2.1"
   },
   "scripts": {
-    "dev": "concurrently \"cd backend && uvicorn app.main:app --reload\" \"cd frontend && npm run dev\""
+    "dev": "concurrently \"cd backend && uvicorn app.main:app --reload\" \"cd frontend && npm run dev\"",
+    "dev-con": "concurrently \"cd backend && uvicorn app.main:app --workers 2\" \"cd frontend && npm run dev\""
   }
 }
