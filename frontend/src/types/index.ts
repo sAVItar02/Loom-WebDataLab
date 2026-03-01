@@ -17,6 +17,8 @@ export interface Session {
     mode: 'static' | 'dynamic';
     elements: Element[];
     created_at: string;
+    raw_html: string;
+    page_name: string;
   }
   
   export interface Element {

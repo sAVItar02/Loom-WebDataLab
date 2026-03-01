@@ -16,7 +16,7 @@ export const useCreatePage = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ sessionId, url, selector }: { sessionId: string, url: string, selector: string }) => createPage(sessionId, url, selector),
+        mutationFn: ({ sessionId, url, selector, pageName }: { sessionId: string, url: string, selector: string, pageName: string }) => createPage(sessionId, url, selector, pageName),
         onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: queryKeys.pages(variables.sessionId), refetchType: "active" });
             toast.success("Page created successfully");
