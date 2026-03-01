@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
+import { useNavigate } from 'react-router';
 import { ChevronLeft, FileCode, Loader2, Plus, RefreshCcw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '../components/ui/Button';
@@ -13,6 +14,7 @@ import { parseApiDate } from '../utils/helpers';
 
 export function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [selectedHtml, setSelectedHtml] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [url, setUrl] = useState('');
@@ -202,6 +204,9 @@ export function SessionDetailPage() {
               placeholder="e.g., .product-card"
               className="w-full rounded-lg border border-border-default bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
             />
+            <p className="text-xs text-text-muted">
+              Selector is only used for element scraping. Link Graph uses only the URL.
+            </p>
           </div>
           <div className="pt-4 flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
@@ -209,21 +214,21 @@ export function SessionDetailPage() {
             </Button>
             <Button
               type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsModalOpen(false);
+                navigate(`/pagerank-graph?url=${encodeURIComponent(url)}&hop=2&topK=200`);
+              }}
+              disabled={!url}
+            >
+              Generate PageRank Link Graph
+            </Button>
+
+            <Button
+              type="button"
               disabled={isCreatingPage}
               isLoading={isCreatingPage}
-              onClick={() =>
-                createPage(
-                  { sessionId: id ?? '', url, selector },
-                  {
-                    onSuccess: async () => {
-                      setIsModalOpen(false);
-                      setUrl('');
-                      setSelector('');
-                      await refetchPages();
-                    },
-                  }
-                )
-              }
+              onClick={() => createPage({ sessionId: id ?? '', url, selector })}
             >
               {isCreatingPage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : 'Start Scrape'}
             </Button>
