@@ -17,11 +17,11 @@ export const useCreatePage = () => {
 
     return useMutation({
         mutationFn: ({ sessionId, url, selector }: { sessionId: string, url: string, selector: string }) => createPage(sessionId, url, selector),
-        onSuccess: ({ sessionId }: { sessionId: string }) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.pages(sessionId) });
+        onSuccess: (_data, variables) => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.pages(variables.sessionId), refetchType: "active" });
             toast.success("Page created successfully");
         }, onError: (error) => {
-            toast.error(error.message);
+            toast.error(error.message); 
         },
     });
 };
