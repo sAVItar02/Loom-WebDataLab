@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { formatDistanceToNow } from 'date-fns';
 import { Plus, Search, RefreshCcw } from 'lucide-react';
@@ -13,9 +13,12 @@ import { parseApiDate } from '../utils/helpers'
 export function SessionsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
   const { data: sessions, isLoading: isLoadingSessions, refetch } = useSessions();
   const { mutate: createSession, isPending: isCreatingSession } = useCreateSession();
+
+  const filteredSessions = useMemo(() => sessions?.filter((session: Session) => session.name.toLowerCase().includes(search.toLowerCase())) ?? [], [sessions, search]);
 
   return (
     <div className="space-y-6">
@@ -43,11 +46,13 @@ export function SessionsPage() {
             type="text"
             placeholder="Search sessions..."
             className="h-10 w-full rounded-lg border border-border-default bg-bg-secondary pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      {!sessions ? (
+      {!filteredSessions || isLoadingSessions ? (
         <div className="space-y-4 animate-pulse">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-16 bg-bg-tertiary rounded-xl"></div>
@@ -65,14 +70,14 @@ export function SessionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sessions.length === 0 ? (
+            {filteredSessions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center text-text-muted">
                   No sessions found. Create one to get started.
                 </TableCell>
               </TableRow>
             ) : (
-              sessions.map((session: Session) => (
+              filteredSessions.map((session: Session) => (
                 <TableRow key={session.id.toString()} onClick={() => navigate(`/sessions/${session.id.toString()}`)} className="group cursor-pointer">
                   <TableCell className="font-medium">
                       {session.name}

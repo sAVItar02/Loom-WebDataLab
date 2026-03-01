@@ -12,6 +12,13 @@ import { useCreatePage, usePages } from '../queries/page.queries';
 import type { Page } from '../types';
 import { parseApiDate } from '../utils/helpers';
 
+const formatHtmlForDisplay = (html: string) =>
+  html
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
 export function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -19,6 +26,7 @@ export function SessionDetailPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [selector, setSelector] = useState('');
+  const [pageName, setPageName] = useState('');
 
   const { data: session, isLoading: isLoadingSession, refetch } = useSession(id ?? '0');
   const { data: pages, isLoading: isLoadingPages, refetch: refetchPages } = usePages(id ?? '');
@@ -122,7 +130,7 @@ export function SessionDetailPage() {
                   <div className="flex-1 min-w-0 pr-4">
                     <div className="flex items-center gap-3 mb-1">
                       <Link to={`/pages/${page.id}`} className="text-lg font-medium hover:text-primary transition-colors truncate">
-                        {page.url}
+                        {page.page_name || page.url.split('/').pop() || 'Untitled'}
                       </Link>
                       <Badge variant={page.elements.length != 0 ? 'success' :   'danger'}>
                         {page.elements.length != 0 ? 'Scraped' : 'Failed'}
@@ -140,7 +148,7 @@ export function SessionDetailPage() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     {page.elements.length != 0 && (
-                      <Button variant="outline" size="sm" onClick={() => setSelectedHtml(page.elements[0].text_content)}>
+                      <Button variant="outline" size="sm" onClick={() => setSelectedHtml(page.raw_html)}>
                         <FileCode className="h-4 w-4 mr-2" />
                         View HTML
                       </Button>
@@ -166,7 +174,7 @@ export function SessionDetailPage() {
       >
         <div className="mt-4 bg-bg-secondary rounded-lg p-4 overflow-auto max-h-[60vh] border border-border-default">
           <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all">
-            {selectedHtml}
+            {selectedHtml ? formatHtmlForDisplay(selectedHtml) : ''}
           </pre>
         </div>
         <div className="mt-6 flex justify-end">
@@ -179,6 +187,19 @@ export function SessionDetailPage() {
           This will start a new scrape for the session.
         </p>
         <form onSubmit={() => {}} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="page_name" className="text-sm font-medium text-text-secondary">
+              Page Name <span className="text-error">*</span>
+            </label>
+            <input
+              id="page_name"
+              type="text"
+              value={pageName}
+              onChange={(e) => setPageName(e.target.value)}
+              placeholder="e.g., Product Page"
+              className="w-full rounded-lg border border-border-default bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+            />
+          </div>
           <div className="space-y-2">
             <label htmlFor="url" className="text-sm font-medium text-text-secondary">
               URL <span className="text-error">*</span>
@@ -228,7 +249,20 @@ export function SessionDetailPage() {
               type="button"
               disabled={isCreatingPage}
               isLoading={isCreatingPage}
-              onClick={() => createPage({ sessionId: id ?? '', url, selector })}
+              onClick={() =>
+                createPage(
+                  { sessionId: id ?? '', url, selector, pageName },
+                  {
+                    onSuccess: async () => {
+                      setIsModalOpen(false);
+                      setUrl('');
+                      setSelector('');
+                      setPageName('');
+                      await refetchPages();
+                    },
+                  }
+                )
+              }
             >
               {isCreatingPage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : 'Start Scrape'}
             </Button>

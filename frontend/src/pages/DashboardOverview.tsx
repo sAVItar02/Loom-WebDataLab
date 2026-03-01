@@ -54,7 +54,7 @@ export function DashboardOverview() {
             {isLoadingSessions ? (
               <div className="h-8 w-24 bg-bg-tertiary rounded-lg animate-pulse"></div>
             ) : (
-              <div className="text-3xl font-bold">{sessions && (sessions.elements_extracted) || 0}</div>
+              <div className="text-3xl font-bold">{sessions && (sessions.reduce((acc: number, session: Session) => acc + session.elements_extracted, 0)) || 0}</div>
             )}
             <p className="text-xs text-text-muted mt-1">Data points collected</p>
           </CardContent>

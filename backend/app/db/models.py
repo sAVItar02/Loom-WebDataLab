@@ -29,6 +29,7 @@ class ScrapedPage(Base):
     selector = Column(String, nullable=True)
     mode = Column(String, default="static")
     created_at = Column(DateTime, default=datetime.utcnow)
+    page_name = Column(String, nullable=False)
 
     session = relationship(
         "ScrapeSession",
