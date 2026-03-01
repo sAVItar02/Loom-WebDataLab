@@ -21,7 +21,7 @@ export function SessionDetailPage() {
   const [selector, setSelector] = useState('');
 
   const { data: session, isLoading: isLoadingSession, refetch } = useSession(id ?? '0');
-  const { data: pages, isLoading: isLoadingPages } = usePages(id ?? '');
+  const { data: pages, isLoading: isLoadingPages, refetch: refetchPages } = usePages(id ?? '');
   const { mutate: createPage, isPending: isCreatingPage } = useCreatePage();
 
   if (isLoadingSession || isLoadingPages) {
@@ -78,6 +78,10 @@ export function SessionDetailPage() {
             <RefreshCcw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
+          <Button variant="primary" size="sm" onClick={() => setIsModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Start New Scrape
+          </Button>
         </div>
       </div>
 
@@ -87,7 +91,7 @@ export function SessionDetailPage() {
             <CardTitle className="text-sm font-medium text-text-secondary">Pages Scraped</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{session.page_count}</div>
+            <div className="text-3xl font-bold">{pages.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -95,7 +99,7 @@ export function SessionDetailPage() {
             <CardTitle className="text-sm font-medium text-text-secondary">Elements Extracted</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{session.elements_extracted}</div>
+            <div className="text-3xl font-bold">{pages.reduce((acc: number, page: Page) => acc + page.elements.length, 0)}</div>
           </CardContent>
         </Card>
       </div>

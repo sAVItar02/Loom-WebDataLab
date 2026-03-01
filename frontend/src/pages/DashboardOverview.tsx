@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Database, FileText, LayoutList } from 'lucide-react';
 import { useSessions } from '../queries/session.queries';
+import type { Session } from '../types';
 
 export function DashboardOverview() {
 
@@ -38,7 +39,7 @@ export function DashboardOverview() {
             {isLoadingSessions ? (
               <div className="h-8 w-24 bg-bg-tertiary rounded-lg animate-pulse"></div>
             ) : (
-              <div className="text-3xl font-bold">{sessions && (sessions.page_count) || 0}</div>
+              <div className="text-3xl font-bold">{sessions && (sessions.reduce((acc: number, session: Session) => acc + session.page_count, 0)) || 0}</div>
             )}
             <p className="text-xs text-text-muted mt-1">Successfully processed</p>
           </CardContent>

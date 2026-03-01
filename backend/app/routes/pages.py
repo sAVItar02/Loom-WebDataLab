@@ -47,9 +47,9 @@ def create_page_and_scrape(
             page_id=page.id,
             tag_name=item["tag_name"],
             text_content=item["text_content"],
-            # detected_type=item["detected_type"],
-            # numeric_value=item["numeric_value"],
-            # date_value=item["date_value"],
+            detected_type=item["detected_type"],
+            numeric_value=item["numeric_value"],
+            date_value=item["date_value"],
         )
 
         db.add(element)
@@ -58,9 +58,9 @@ def create_page_and_scrape(
             ScrapedElementResponse(
                 tag_name=item["tag_name"],
                 text_content=item["text_content"],
-                # detected_type=item["detected_type"],
-                # numeric_value=item["numeric_value"],
-                # date_value=item["date_value"],
+                detected_type=item["detected_type"],
+                numeric_value=item["numeric_value"],
+                date_value=item["date_value"],
             )
         )
 
