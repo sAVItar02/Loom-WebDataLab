@@ -20,6 +20,10 @@ const DEFAULT_URL = "https://example.com";
 const CRAWL_CAP_PAGES = 1000;
 const MAX_LINKS_PER_PAGE = 250;
 
+// Threshold above which we skip cose-bilkent animation entirely and snap
+// directly to final positions — dramatically faster for large graphs.
+const ANIMATE_THRESHOLD = 400;
+
 function StatTile({
   label,
   value,
@@ -55,6 +59,10 @@ function StatTile({
 export function PageRankGraph() {
   const [searchParams] = useSearchParams();
   const cyRef = useRef<cytoscape.Core | null>(null);
+  // Stored as state so the event-wiring useEffect is guaranteed to run AFTER
+  // react-cytoscapejs's own internal useEffect has called the cy prop callback
+  // and the instance is actually ready. A plain ref change does not trigger effects.
+  const [cyInstance, setCyInstance] = useState<cytoscape.Core | null>(null);
 
   const [url, setUrl] = useState(DEFAULT_URL);
 
@@ -79,6 +87,21 @@ export function PageRankGraph() {
 
   const radialPushedForKeyRef = useRef<string>("");
   const runIdRef = useRef(0);
+
+  // Stable ref so event handlers always call the latest applyRadialDepthPush
+  // without needing to re-wire the "layoutstop" listener on every render.
+  const applyRadialRef = useRef<() => void>(() => {});
+
+  // Safety timer: if `graphBusy` stays true more than 8 s after a layout starts
+  // (e.g. empty graph, layoutstop never fires), clear it automatically.
+  const graphBusyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearBusyTimer = useCallback(() => {
+    if (graphBusyTimerRef.current !== null) {
+      clearTimeout(graphBusyTimerRef.current);
+      graphBusyTimerRef.current = null;
+    }
+  }, []);
 
   const run = useCallback(
     async (nextUrl?: string) => {
@@ -143,6 +166,7 @@ export function PageRankGraph() {
     }
 
     if (u) run(u);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const normalized = (s: string) => s.trim().replace(/\/+$/, "");
@@ -183,11 +207,31 @@ export function PageRankGraph() {
 
   useEffect(() => {
     if (!filtered) return;
-    setGraphBusy(true); 
+
+    // Stop any in-flight layout on the outgoing cy instance so it doesn't
+    // ghost-animate after the component key changes.
+    cyRef.current?.stop();
+
+    // Reset the instance state *before* bumping graphVersion. This triggers
+    // the effect cleanup on the old instance (removing its listeners) and
+    // ensures we don't briefly wire events on a destroyed cy object.
+    setCyInstance(null);
+
+    setGraphBusy(true);
     setGraphVersion((v) => v + 1);
     setSelectedNodeId(null);
     setTooltip({ visible: false, x: 0, y: 0, text: "" });
-  }, [filtered]);
+
+    // Safety-net: if layoutstop never fires (e.g. 0-node graph), lift the
+    // busy overlay after 8 s so the UI isn't permanently blocked.
+    clearBusyTimer();
+    graphBusyTimerRef.current = setTimeout(() => {
+      setGraphBusy(false);
+    }, 8000);
+  }, [filtered, clearBusyTimer]);
+
+  // Tear down the safety timer on unmount.
+  useEffect(() => () => clearBusyTimer(), [clearBusyTimer]);
 
   const selectedNode = useMemo(() => {
     if (!filtered || !selectedNodeId) return null;
@@ -300,10 +344,13 @@ export function PageRankGraph() {
     ];
   }, [prExtent]);
 
+  // Build the layout config. For large element counts, skip per-frame animation
+  // (animate: false) so the layout snaps directly to final positions — this is
+  // 3-5× faster and avoids the janky sliding-node glitch on big graphs.
   const cyLayout = useMemo(
     () => ({
       name: "cose-bilkent",
-      animate: true,
+      animate: cyElements.length <= ANIMATE_THRESHOLD,
       animationDuration: 600,
       fit: true,
       padding: 120,
@@ -312,11 +359,14 @@ export function PageRankGraph() {
       edgeElasticity: 0.22,
       gravity: 0.02,
       nestingFactor: 1.2,
-      numIter: 2200,
+      numIter: 1500,
       tile: true,
       randomize: true,
     }),
-    []
+    // Recompute when the element count crosses the animate threshold so that
+    // animate toggling follows the current batch of elements.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cyElements.length > ANIMATE_THRESHOLD]
   );
 
   const applyRadialDepthPush = useCallback(() => {
@@ -350,6 +400,74 @@ export function PageRankGraph() {
 
     cy.fit(undefined, 80);
   }, [filtered, appliedHop, topK]);
+
+  // Keep the stable ref in sync so the single "layoutstop" handler always
+  // calls the latest version without needing to re-register the event.
+  useEffect(() => {
+    applyRadialRef.current = applyRadialDepthPush;
+  }, [applyRadialDepthPush]);
+
+  // Wire all Cytoscape event listeners.
+  // Keyed on `cyInstance` (state) — NOT `graphVersion` — so this effect is
+  // guaranteed to run only AFTER react-cytoscapejs has called the cy prop
+  // callback and set the instance. Keying on graphVersion caused a race where
+  // the parent effect ran before the child cy callback, giving us null.
+  useEffect(() => {
+    const cy = cyInstance;
+    if (!cy) return;
+
+    // ── Tap on node ──────────────────────────────────────────────────────────
+    const onNodeTap = (evt: cytoscape.EventObject) => {
+      const id = evt.target.id();
+      setSelectedNodeId(id);
+      graphUtils.focusNodeInGraph(cy, id);
+    };
+
+    // ── Tap on background ────────────────────────────────────────────────────
+    const onBgTap = (evt: cytoscape.EventObject) => {
+      if (evt.target === cy) setSelectedNodeId(null);
+    };
+
+    // ── Tooltip: mouseover sets text, mousemove updates position only ─────────
+    // This prevents expensive React re-renders on every pixel of mouse movement.
+    const onMouseover = (evt: cytoscape.EventObject) => {
+      const rp = evt.renderedPosition;
+      const text = evt.target.data("short") || evt.target.data("url") || "";
+      setTooltip({ visible: true, x: rp.x + 12, y: rp.y + 12, text });
+    };
+
+    const onMousemove = (evt: cytoscape.EventObject) => {
+      const rp = evt.renderedPosition;
+      setTooltip((t) => (t.visible ? { ...t, x: rp.x + 12, y: rp.y + 12 } : t));
+    };
+
+    const onMouseout = () => {
+      setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
+    };
+
+    // ── Layout lifecycle ──────────────────────────────────────────────────────
+    const onLayoutStop = () => {
+      applyRadialRef.current();
+      clearBusyTimer();
+      requestAnimationFrame(() => setGraphBusy(false));
+    };
+
+    cy.on("tap", "node", onNodeTap);
+    cy.on("tap", onBgTap);
+    cy.on("mouseover", "node", onMouseover);
+    cy.on("mousemove", "node", onMousemove);
+    cy.on("mouseout", "node", onMouseout);
+    cy.on("layoutstop", onLayoutStop);
+
+    return () => {
+      cy.removeListener("tap", "node", onNodeTap);
+      cy.removeListener("tap", onBgTap as any);
+      cy.removeListener("mouseover", "node", onMouseover);
+      cy.removeListener("mousemove", "node", onMousemove);
+      cy.removeListener("mouseout", "node", onMouseout);
+      cy.removeListener("layoutstop", onLayoutStop);
+    };
+  }, [cyInstance, clearBusyTimer]);
 
   const top20Full = useMemo(() => {
     if (!data) return [];
@@ -408,7 +526,7 @@ export function PageRankGraph() {
             </div>
 
             <div className="space-y-2">
-              <div className="font-medium text-text-primary">Sampling & limits (important)</div>
+              <div className="font-medium text-text-primary">Sampling &amp; limits (important)</div>
               <ul className="list-disc pl-5 text-text-secondary space-y-1">
                 <li>
                   The crawl is capped by a <span className="font-medium text-text-primary">page limit</span> (max pages). If the cap is
@@ -563,43 +681,13 @@ export function PageRankGraph() {
                   stylesheet={cyStylesheet}
                   layout={cyLayout}
                   style={{ width: "100%", height: "100%" }}
-                  cy={(cy) => {
+                  cy={(cy: cytoscape.Core) => {
+                    // Both the ref (for imperative access, e.g. focusNodeInGraph)
+                    // and the state (to trigger the event-wiring useEffect) must
+                    // be updated here. Only the state change causes the effect to
+                    // re-run, which guarantees correct ordering vs child effects.
                     cyRef.current = cy;
-
-                    cy.off("tap");
-                    cy.off("mouseover");
-                    cy.off("mousemove");
-                    cy.off("mouseout");
-                    cy.off("layoutstart");
-                    cy.off("layoutstop");
-
-                    cy.on("tap", "node", (evt) => {
-                      const id = evt.target.id();
-                      setSelectedNodeId(id);
-                      graphUtils.focusNodeInGraph(cy, id);
-                    });
-
-                    cy.on("tap", (evt) => {
-                      if (evt.target === cy) setSelectedNodeId(null);
-                    });
-
-                    cy.on("mouseover", "node", (evt) => {
-                      const rp = evt.renderedPosition;
-                      const text = evt.target.data("short") || evt.target.data("url") || "";
-                      setTooltip({ visible: true, x: rp.x + 12, y: rp.y + 12, text });
-                    });
-                    cy.on("mousemove", "node", (evt) => {
-                      const rp = evt.renderedPosition;
-                      const text = evt.target.data("short") || evt.target.data("url") || "";
-                      setTooltip({ visible: true, x: rp.x + 12, y: rp.y + 12, text });
-                    });
-                    cy.on("mouseout", "node", () => setTooltip((t) => (t.visible ? { ...t, visible: false } : t)));
-
-                    cy.on("layoutstart", () => setGraphBusy(true));
-                    cy.on("layoutstop", () => {
-                      applyRadialDepthPush();
-                      requestAnimationFrame(() => setGraphBusy(false));
-                    });
+                    setCyInstance(cy);
                   }}
                 />
 
