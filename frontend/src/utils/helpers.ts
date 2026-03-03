@@ -10,3 +10,17 @@ export function parseApiDate(value: string): Date {
   const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/.test(value);
   return new Date(hasTimezone ? value : `${value}Z`);
 }
+
+export function formatHtmlForDisplay(html?: string | null) {
+  if (!html) {
+    return '';
+  }
+
+  return html
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}

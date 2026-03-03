@@ -1,5 +1,5 @@
 import toast from "react-hot-toast";
-import { createPage, getPages } from "../apis/page.api";
+import { createPage, getPage, getPages } from "../apis/page.api";
 import { queryKeys } from "./queryKeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -25,3 +25,12 @@ export const useCreatePage = () => {
         },
     });
 };
+
+export const usePage = (pageId: string) => {
+    return useQuery({
+        queryKey: queryKeys.page(pageId),
+        queryFn: () => getPage(pageId),
+        enabled: !!pageId,
+        staleTime: 1000 * 60 * 5,
+    })
+}

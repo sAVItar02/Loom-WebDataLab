@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useNavigate } from 'react-router';
-import { ChevronLeft, FileCode, Loader2, Plus, RefreshCcw } from 'lucide-react';
+import { ChevronLeft, Loader2, Plus, RefreshCcw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -10,14 +10,9 @@ import { Modal } from '../components/ui/Modal';
 import { useSession } from '../queries/session.queries';
 import { useCreatePage, usePages } from '../queries/page.queries';
 import type { Page } from '../types';
-import { parseApiDate } from '../utils/helpers';
-
-const formatHtmlForDisplay = (html: string) =>
-  html
-    .replace(/\r\n/g, '\n')
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+import { formatHtmlForDisplay, parseApiDate } from '../utils/helpers';
+import { containerVariants, itemVariants, horizontalItemVariants } from '../utils/animations';
+import { motion } from 'framer-motion';
 
 export function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -93,28 +88,32 @@ export function SessionDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-text-secondary">Pages Scraped</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{pages.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid gap-6 md:grid-cols-3">
+        <motion.div variants={horizontalItemVariants}>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-text-secondary">Pages Scraped</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{pages.length}</div>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div variants={horizontalItemVariants}>
+          <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-text-secondary">Elements Extracted</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{pages.reduce((acc: number, page: Page) => acc + page.elements.length, 0)}</div>
           </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </motion.div>
+      </motion.div>
 
       <div>
         <h3 className="text-lg font-semibold mb-4">Scraped Pages</h3>
-        <div className="space-y-4">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
           {pages.length === 0 ? (
             <div className="text-center py-12 border border-border-default border-dashed rounded-xl bg-bg-secondary/30 flex flex-col items-center justify-center gap-8">
               <p className="text-text-muted">No pages scraped yet.</p>
@@ -125,7 +124,7 @@ export function SessionDetailPage() {
             </div>
           ) : (
             pages.map((page: Page) => (
-              <Card key={page.id} className="hover:border-border-strong transition-colors">
+              <motion.div key={page.id} variants={itemVariants} className="border border-border-default/75 rounded-xl">
                 <div className="p-6 flex items-center justify-between">
                   <div className="flex-1 min-w-0 pr-4">
                     <div className="flex items-center gap-3 mb-1">
@@ -147,12 +146,12 @@ export function SessionDetailPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    {page.elements.length != 0 && (
+                    {/* {page.elements.length != 0 && (
                       <Button variant="outline" size="sm" onClick={() => setSelectedHtml(page.raw_html)}>
                         <FileCode className="h-4 w-4 mr-2" />
                         View HTML
                       </Button>
-                    )}
+                    )} */}
                     <Link to={`/pages/${page.id}`}>
                       <Button variant="secondary" size="sm">
                         View Elements
@@ -160,10 +159,10 @@ export function SessionDetailPage() {
                     </Link>
                   </div>
                 </div>
-              </Card>
+              </motion.div>
             ))
           )}
-        </div>
+        </motion.div>
       </div>
 
       <Modal

@@ -1,11 +1,16 @@
-import { NavLink, Outlet } from "react-router";
+import { NavLink, useLocation, useOutlet } from "react-router";
 import { LayoutDashboard, List, BarChartBig } from "lucide-react";
 import { cn } from "../utils/helpers";
 import SpiderLogo from "../assets/spider.svg?react";
 import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { pageTransitionVariants } from "../utils/animations";
 
 export function DashboardLayout() {
+  const location = useLocation();
+  const outlet = useOutlet();
+
   const navItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Sessions", href: "/sessions", icon: List },
@@ -15,9 +20,11 @@ export function DashboardLayout() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   return (
-    <div className={`${theme === "dark" ? "dark" : ""} flex min-h-screen w-full bg-bg-primary text-text-primary font-sans selection:bg-primary/30`}>
+    <div
+      className={`${theme === "dark" ? "dark" : ""} flex h-screen w-full overflow-hidden bg-bg-primary text-text-primary font-sans selection:bg-primary/30`}
+    >
       {/* Sidebar */}
-      <aside className="w-64 border-r border-border-default bg-bg-secondary flex flex-col">
+      <aside className="h-screen w-64 shrink-0 border-r border-border-default bg-bg-secondary flex flex-col">
         <div className="flex h-16 items-center px-6 border-b border-border-default justify-between">
           <div className="flex items-center gap-2 font-semibold text-lg tracking-tight">
             <div className="h-6 w-6 rounded bg-primary flex items-center justify-center text-text-on-primary">
@@ -58,7 +65,17 @@ export function DashboardLayout() {
         </header>
         <div className="flex-1 overflow-auto p-8">
           <div className="mx-auto max-w-6xl">
-            <Outlet />
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={location.pathname}
+                variants={pageTransitionVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                {outlet}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </main>
