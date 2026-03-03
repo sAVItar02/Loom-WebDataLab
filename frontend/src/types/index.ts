@@ -19,14 +19,15 @@ export interface Session {
     created_at: string;
     raw_html: string;
     page_name: string;
+    tag: string;
   }
   
   export interface Element {
     id: string;
     page_id: string;
-    tag: string;
+    tag_name: string;
     text_content: string;
-    attributes: Record<string, string>;
+    detected_type: string;
     extracted_at: string;
   }
   
