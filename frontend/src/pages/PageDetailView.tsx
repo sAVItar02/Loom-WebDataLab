@@ -1,88 +1,159 @@
-import { Link } from 'react-router';
-import { ChevronLeft, ExternalLink, Filter, Search } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { ChevronLeft, Code, ExternalLink, FileCode, Tag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '../components/ui/Badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
+import { usePage } from '../queries/page.queries';
+import { formatHtmlForDisplay, parseApiDate } from '../utils/helpers';
+import type { Element } from '../types';
+import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { SCRAPING_TEMPLATES } from '../constants/scrapingTemplates';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { materialDark, materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export function PageDetailView() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { data: page, isLoading: isLoadingPage } = usePage(id ?? '');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const selectedView = searchParams.get('view') ?? 'tags';
+  const setViewInUrl = (view: 'tags' | 'html') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('view', view);
+      return next;
+    }, { replace: true });
+  };
+
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <Link to={`/sessions`} className="p-2 rounded-lg hover:bg-bg-secondary text-text-muted transition-colors">
+        <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-bg-secondary text-text-muted transition-colors">
           <ChevronLeft className="h-5 w-5" />
-        </Link>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight truncate max-w-2xl">Page Title</h2>
+        </button>
+        <div className="w-full">
+          <div className="flex items-center justify-between gap-2 w-full">
+            <h2 className="text-2xl font-bold tracking-tight truncate max-w-2xl">
+              {
+                page?.page_name ? <div className="truncate max-w-2xl">{page?.page_name}</div> : <div className="w-80 h-10 animate-pulse bg-bg-tertiary rounded"></div>
+              }
+            </h2>
+
+            <Button onClick={() => setIsModalOpen(true)} variant="primary" size="sm" className="cursor-pointer"><Code className="h-4 w-4 mr-2" /> Show Code Snippet</Button>
+          </div>
           <div className="flex items-center gap-2 mt-1 text-sm text-text-secondary">
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary hover:underline flex items-center gap-1">
-              https://example.com
+            <a href={page?.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary hover:underline flex items-center gap-1">
+              {
+                page?.url ? <div className="truncate max-w-2xl">{page?.url}</div> : <div className="w-80 h-4 animate-pulse bg-bg-tertiary rounded"></div>
+              }
               <ExternalLink className="h-3 w-3" />
             </a>
             <span>·</span>
-            <span>Scraped {formatDistanceToNow(new Date(), { addSuffix: true })}</span>
+            <span>Scraped {page?.created_at ? formatDistanceToNow(parseApiDate(page?.created_at), { addSuffix: true }) : 'N/A'}</span>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4 justify-between bg-bg-secondary/50 p-4 rounded-xl border border-border-default">
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-            <input
-              type="text"
-              placeholder="Search content or attributes..."
-              className="h-10 w-full rounded-lg border border-border-default bg-bg-primary pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
-            />
-          </div>
-          <div className="relative flex items-center gap-2">
-            <Filter className="h-4 w-4 text-text-muted" />
-            <select
-              className="h-10 rounded-lg border border-border-default bg-bg-primary px-3 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary appearance-none pr-8"
-            >
-              <option value="">All Tags</option>
-            </select>
-          </div>
-        </div>
-        <div className="text-sm text-text-secondary font-medium">
-          Showing 0 of 0 elements
-        </div>
+      <div className={`border border-border-default rounded-full p-1 grid grid-cols-2 items-center justify-center w-fit relative before:content-[''] before:absolute before:w-[100px] before:h-[calc(100%-8px)] before:rounded-full before:bg-primary before:left-1 before:z-0 before:transition-all before:duration-300 ${selectedView !== 'tags' ? 'before:left-[calc(100px+4px)]' : ''}`}>
+        <button onClick={() => setViewInUrl('tags')} className={`px-4 py-2 w-[100px] cursor-pointer rounded-full transition-colors flex items-center gap-2 text-sm relative z-2 ${selectedView === 'tags' ? 'text-text-on-primary' : ''}`}>
+          <Tag className="h-4 w-4" />
+          Tags
+        </button>
+        <button onClick={() => setViewInUrl('html')} className={`px-4 py-2 w-[100px] cursor-pointer rounded-full transition-colors flex items-center gap-2 text-sm relative z-2 ${selectedView === 'html' ? 'text-text-on-primary' : ''}`}>
+          <FileCode className="h-4 w-4" />
+          HTML
+        </button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-24">Tag</TableHead>
-            <TableHead className="w-1/2">Content</TableHead>
-            <TableHead>Attributes</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.isArray([]) && [].length === 0 ? (
+      {selectedView === 'tags' && (
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={3} className="h-24 text-center text-text-muted">
-                No elements found matching your criteria.
-              </TableCell>
+              <TableHead className="w-24">Tag</TableHead>
+              <TableHead className="w-1/2">Content</TableHead>
+              <TableHead>Type</TableHead>
             </TableRow>
-          ) : (
-            Array.isArray([]) && [].map((element: { id: string; tag: string; text_content: string }) => (
-              <TableRow key={element.id}>
-                <TableCell>
-                  <Badge variant="default" className="font-mono text-[10px] tracking-wider">
-                    {element.tag || ''}
-                  </Badge>
-                </TableCell>
-                <TableCell className="max-w-md">
-                  <div className="truncate text-text-secondary" title={element.text_content || ''}>
-                    {element.text_content || <span className="text-text-muted italic">Empty</span>}
-                  </div>
+          </TableHeader>
+          {isLoadingPage ? (
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center text-text-muted animate-pulse space-y-4">
+                  <div className="h-12 w-full bg-bg-tertiary rounded animate-pulse"></div>
+                  <div className="h-12 w-full bg-bg-tertiary rounded animate-pulse"></div>
+                  <div className="h-12 w-full bg-bg-tertiary rounded animate-pulse"></div>
+                  <div className="h-12 w-full bg-bg-tertiary rounded animate-pulse"></div>
                 </TableCell>
               </TableRow>
-            ))
+            </TableBody>
+          ) : ( 
+          <TableBody>
+            {!page?.elements || page?.elements.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center text-text-muted">
+                  No elements found matching your criteria.
+                </TableCell>
+              </TableRow>
+            ) : (
+              page?.elements.map((element: Element, index: number) => (
+                <TableRow key={index.toString()}>
+                  <TableCell>
+                    <Badge variant="default" className="font-mono text-[10px] tracking-wider">
+                      {element.tag_name || ''}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-md whitespace-pre-wrap break-all">
+                    <div className="truncate text-text-secondary" title={element.text_content || ''}>
+                      {formatHtmlForDisplay(element.text_content) || <span className="text-text-muted italic">No content found</span>}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <pre className="text-xs text-text-muted">{element.detected_type || 'N/A'}</pre>
+                  </TableCell>
+                </TableRow>
+              ))
+              )}
+            </TableBody>
           )}
-        </TableBody>
-      </Table>
+        </Table>
+      )}
+
+      {
+        selectedView === 'html' && (
+          <div className="rounded-xl border border-border-default overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-border-default bg-bg-secondary px-4 py-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
+              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
+              <span className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
+              <span className="ml-2 text-xs text-text-muted font-medium">{page?.page_name || 'Untitled'}.html</span>
+            </div>
+            <pre className="max-h-[65vh] overflow-auto bg-[#f6f8fa] text-[#24292f] dark:bg-[#0d1117] dark:text-[#c9d1d9] p-4 text-xs leading-6 font-mono whitespace-pre-wrap break-all">
+              {formatHtmlForDisplay(page?.raw_html) || 'No HTML found'}
+            </pre>
+          </div>
+        )
+      }
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} className="max-w-4xl w-full" title="Code Snippet">
+        <div className='mb-4'>
+          <p className='text-sm text-text-secondary'>{SCRAPING_TEMPLATES[page?.mode as keyof typeof SCRAPING_TEMPLATES]?.description}</p>
+        </div>
+        <div className="mt-4 bg-bg-secondary rounded-lg p-4 overflow-auto max-h-[60vh] border border-border-default">
+          <SyntaxHighlighter language="python" style={isDarkMode ? materialDark : materialLight} className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all">
+            {SCRAPING_TEMPLATES[page?.mode as keyof typeof SCRAPING_TEMPLATES]?.template(page?.url ?? '', page?.selector ?? '')}
+          </SyntaxHighlighter>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Button onClick={() => setIsModalOpen(false)}>Close</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

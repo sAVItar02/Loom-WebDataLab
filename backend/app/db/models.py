@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Index, Float
 from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime
 import uuid 
@@ -29,6 +29,7 @@ class ScrapedPage(Base):
     selector = Column(String, nullable=True)
     mode = Column(String, default="static")
     created_at = Column(DateTime, default=datetime.utcnow)
+    page_name = Column(String, nullable=False)
 
     session = relationship(
         "ScrapeSession",
@@ -48,6 +49,9 @@ class ScrapedElement(Base):
     page_id = Column(UUID(as_uuid=True), ForeignKey("scraped_pages.id", ondelete="CASCADE"), nullable=False)
     tag_name = Column(String)
     text_content = Column(Text)
+    detected_type = Column(String, nullable=True)
+    numeric_value = Column(Float, nullable=True)
+    date_value = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     page = relationship(

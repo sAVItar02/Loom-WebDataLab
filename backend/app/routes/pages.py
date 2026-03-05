@@ -35,6 +35,7 @@ def create_page_and_scrape(
         selector=payload.selector,
         raw_html=raw_html,
         mode=payload.mode or "static",
+        page_name=payload.page_name,
     )
 
     db.add(page)
@@ -47,9 +48,9 @@ def create_page_and_scrape(
             page_id=page.id,
             tag_name=item["tag_name"],
             text_content=item["text_content"],
-            # detected_type=item["detected_type"],
-            # numeric_value=item["numeric_value"],
-            # date_value=item["date_value"],
+            detected_type=item["detected_type"],
+            numeric_value=item["numeric_value"],
+            date_value=item["date_value"],
         )
 
         db.add(element)
@@ -58,9 +59,9 @@ def create_page_and_scrape(
             ScrapedElementResponse(
                 tag_name=item["tag_name"],
                 text_content=item["text_content"],
-                # detected_type=item["detected_type"],
-                # numeric_value=item["numeric_value"],
-                # date_value=item["date_value"],
+                detected_type=item["detected_type"],
+                numeric_value=item["numeric_value"],
+                date_value=item["date_value"],
             )
         )
 
@@ -69,8 +70,11 @@ def create_page_and_scrape(
     return PageResponse(
         id=page.id,
         url=page.url,
+        page_name=page.page_name,
         selector=page.selector,
         mode=page.mode,
+        raw_html=page.raw_html,
+        created_at=page.created_at,
         elements=elements_response,
     )
 
@@ -79,6 +83,8 @@ def create_page_and_scrape(
 def get_pages_for_session(session_id: UUID, db: Session = Depends(get_db)):
     pages = db.query(ScrapedPage).filter(
         ScrapedPage.session_id == session_id
+    ).order_by(
+        ScrapedPage.created_at.desc()
     ).all()
 
     return pages

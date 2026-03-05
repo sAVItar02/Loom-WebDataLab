@@ -26,7 +26,7 @@ def create_session(session: SessionCreate, db: Session = Depends(get_db)):
 def get_sessions(db: Session = Depends(get_db)):
     sessions_with_counts = (
         db.query(ScrapeSession, 
-            func.count(ScrapedPage.id).label("page_count"), 
+            func.count(func.distinct(ScrapedPage.id)).label("page_count"), 
             func.count(ScrapedElement.id).label("elements_extracted"),
             func.max(ScrapedPage.created_at).label("last_scraped_at")
         )

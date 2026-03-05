@@ -5,7 +5,12 @@ export const getPages = async (sessionId: string) => {
     return response.data;
 }
 
-export const createPage = async (sessionId: string, url: string, selector: string) => {
-    const response = await axios.post(`/sessions/${sessionId}/pages`, { url, selector });
+export const createPage = async (sessionId: string, url: string, selector: string, pageName: string) => {
+    const response = await axios.post(`/sessions/${sessionId}/pages`, { url, selector, pageName });
+    return response.data;
+}
+
+export const getPage = async (pageId: string) => {
+    const response = await axios.get(`/pages/${pageId}`);
     return response.data;
 }
