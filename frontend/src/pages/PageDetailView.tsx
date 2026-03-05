@@ -1,17 +1,25 @@
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { ChevronLeft, ExternalLink, FileCode, Tag } from 'lucide-react';
+import { ChevronLeft, Code, ExternalLink, FileCode, Tag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '../components/ui/Badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
 import { usePage } from '../queries/page.queries';
 import { formatHtmlForDisplay, parseApiDate } from '../utils/helpers';
 import type { Element } from '../types';
+import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { SCRAPING_TEMPLATES } from '../constants/scrapingTemplates';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { materialDark, materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export function PageDetailView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: page, isLoading: isLoadingPage } = usePage(id ?? '');
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const selectedView = searchParams.get('view') ?? 'tags';
   const setViewInUrl = (view: 'tags' | 'html') => {
@@ -22,8 +30,8 @@ export function PageDetailView() {
     }, { replace: true });
   };
 
-  // const tags = page?.elements.map((element: Element) => element.tag_name);
-  // const uniqueTags = [...new Set(tags)];
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
   return (
     <div className="space-y-8">
@@ -31,12 +39,16 @@ export function PageDetailView() {
         <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-bg-secondary text-text-muted transition-colors">
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight truncate max-w-2xl">
-            {
-              page?.page_name ? <div className="truncate max-w-2xl">{page?.page_name}</div> : <div className="w-80 h-10 animate-pulse bg-bg-tertiary rounded"></div>
-            }
-          </h2>
+        <div className="w-full">
+          <div className="flex items-center justify-between gap-2 w-full">
+            <h2 className="text-2xl font-bold tracking-tight truncate max-w-2xl">
+              {
+                page?.page_name ? <div className="truncate max-w-2xl">{page?.page_name}</div> : <div className="w-80 h-10 animate-pulse bg-bg-tertiary rounded"></div>
+              }
+            </h2>
+
+            <Button onClick={() => setIsModalOpen(true)} variant="primary" size="sm" className="cursor-pointer"><Code className="h-4 w-4 mr-2" /> Show Code Snippet</Button>
+          </div>
           <div className="flex items-center gap-2 mt-1 text-sm text-text-secondary">
             <a href={page?.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary hover:underline flex items-center gap-1">
               {
@@ -90,8 +102,8 @@ export function PageDetailView() {
                 </TableCell>
               </TableRow>
             ) : (
-              page?.elements.map((element: Element) => (
-                <TableRow key={element.id}>
+              page?.elements.map((element: Element, index: number) => (
+                <TableRow key={index.toString()}>
                   <TableCell>
                     <Badge variant="default" className="font-mono text-[10px] tracking-wider">
                       {element.tag_name || ''}
@@ -128,6 +140,20 @@ export function PageDetailView() {
           </div>
         )
       }
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} className="max-w-4xl w-full" title="Code Snippet">
+        <div className='mb-4'>
+          <p className='text-sm text-text-secondary'>{SCRAPING_TEMPLATES[page?.mode as keyof typeof SCRAPING_TEMPLATES]?.description}</p>
+        </div>
+        <div className="mt-4 bg-bg-secondary rounded-lg p-4 overflow-auto max-h-[60vh] border border-border-default">
+          <SyntaxHighlighter language="python" style={isDarkMode ? materialDark : materialLight} className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all">
+            {SCRAPING_TEMPLATES[page?.mode as keyof typeof SCRAPING_TEMPLATES]?.template(page?.url ?? '', page?.selector ?? '')}
+          </SyntaxHighlighter>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Button onClick={() => setIsModalOpen(false)}>Close</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

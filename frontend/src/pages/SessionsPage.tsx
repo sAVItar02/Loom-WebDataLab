@@ -15,7 +15,7 @@ export function SessionsPage() {
   const [newSessionName, setNewSessionName] = useState('');
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
-  const { data: sessions, isLoading: isLoadingSessions, refetch } = useSessions();
+  const { data: sessions, isLoading: isLoadingSessions, refetch, isRefetching: isRefetchingSessions } = useSessions();
   const { mutate: createSession, isPending: isCreatingSession } = useCreateSession();
 
   const filteredSessions = useMemo(() => sessions?.filter((session: Session) => session.name.toLowerCase().includes(search.toLowerCase())) ?? [], [sessions, search]);
@@ -29,7 +29,7 @@ export function SessionsPage() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => refetch()} disabled={isLoadingSessions}>
-            <RefreshCcw className={`h-4 w-4 mr-2 ${isLoadingSessions ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`h-4 w-4 mr-2 ${isLoadingSessions || isRefetchingSessions ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button onClick={() => setIsModalOpen(true)} disabled={isCreatingSession}>
