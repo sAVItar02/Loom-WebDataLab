@@ -2,10 +2,11 @@ import { NavLink, useLocation, useOutlet } from "react-router";
 import { LayoutDashboard, List, BarChartBig } from "lucide-react";
 import { cn } from "../utils/helpers";
 import SpiderLogo from "../assets/spider.svg?react";
-import { useState } from "react";
+import { ThemeContext } from "../contexts/ThemeContext";
 import { Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { pageTransitionVariants } from "../utils/animations";
+import { useState } from "react";
 
 export function DashboardLayout() {
   const location = useLocation();
@@ -17,7 +18,7 @@ export function DashboardLayout() {
     { name: "PageRank Graph", href: "/pagerank-graph", icon: BarChartBig },
   ];
 
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">(localStorage.getItem('theme') as "light" | "dark" || "light");
 
   return (
     <div
@@ -32,7 +33,10 @@ export function DashboardLayout() {
             </div>
             Loom
           </div>
-          <button onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+          <button onClick={() => {
+              localStorage.setItem('theme', theme === "light" ? "dark" : "light");
+              setTheme(theme === "light" ? "dark" : "light");
+            }}>
             {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </button>
         </div>
@@ -65,17 +69,19 @@ export function DashboardLayout() {
         </header>
         <div className="flex-1 overflow-auto p-8">
           <div className="mx-auto max-w-6xl">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={location.pathname}
-                variants={pageTransitionVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                {outlet}
-              </motion.div>
-            </AnimatePresence>
+            <ThemeContext.Provider value={{ theme, setTheme }}>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={location.pathname}
+                  variants={pageTransitionVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  {outlet}
+                </motion.div>
+              </AnimatePresence>
+            </ThemeContext.Provider>
           </div>
         </div>
       </main>
