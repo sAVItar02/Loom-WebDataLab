@@ -19,6 +19,10 @@ export function normalizeDomain(domain: string, urlFallback: string): string {
   return noPort;
 }
 
+/**
+ * Maps a string to a hue in [0, 360). Called per-node during element
+ * construction, so it must remain O(n) in string length with no allocations.
+ */
 export function hashHue(s: string) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -131,8 +135,8 @@ export function focusNodeInGraph(
 
   const { zoom = 1.2, animationDuration = 300 } = options ?? {};
 
-  cy.elements().removeClass("dimmed");
-  cy.elements().removeClass("emph");
+  // Single traversal to remove both classes avoids visiting every element twice.
+  cy.elements().removeClass("dimmed emph");
 
   const node = cy.getElementById(nodeId);
   if (!node || node.empty()) return;
