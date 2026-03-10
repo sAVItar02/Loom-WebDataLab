@@ -1,4 +1,4 @@
-## LOOM
+## Loom
 
 Loom is an interactive web scraping + visualization playground. You give it a **URL** and **selector**, the backend fetches/extracts data (BeautifulSoup/Selenium) and persists it, and the frontend visualizes results.
 
